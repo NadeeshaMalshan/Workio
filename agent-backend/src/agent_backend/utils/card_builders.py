@@ -584,14 +584,58 @@ def _deterministic_card_builder(state: AgentState, ai_message: Optional[Any] = N
             user_query_lower = user_query.lower()
             last_ai_lower = last_ai_content.lower()
 
-            is_edit_intent = (
+            is_delete_intent = (
+                any(w in user_query_lower for w in [
+                    "delete", "remove", "trash", "take down", "erase", "cancel post", "drop post"
+                ])
+                or any(w in last_ai_lower for w in [
+                    "like me to delete", "confirm before i remove", "confirm before deleting", "delete it?", "remove it?"
+                ])
+            )
+
+            is_edit_intent = not is_delete_intent and (
                 any(w in user_query_lower for w in [
                     "edit", "update", "modify", "change", "add more detail", "add detail", "fix this post", "correct this post", "need edit", "edit that", "edit this"
                 ])
                 or any(w in last_ai_lower for w in [
-                    "what additional details", "proposed update", "edit the post", "edit your post", "to update post", "update post id", "found your", "post (id", "post details for editing", "for editing (id", "for editing"
+                    "what additional details", "proposed update", "edit the post", "edit your post", "to update post", "update post id", "post details for editing", "for editing (id", "for editing"
                 ])
             )
+
+            # Handle delete confirmation before editing or single post detail
+            if is_delete_intent:
+                target_id_m = (
+                    re.search(r'\b(?:id|post)\s*[:#]?\s*(\d+)\b', last_ai_content, re.IGNORECASE)
+                    or re.search(r'\b(?:id|post)\s*[:#]?\s*(\d+)\b', user_query, re.IGNORECASE)
+                )
+                del_id = target_id_m.group(1) if target_id_m else None
+
+                del_title = ""
+                raw_posts_check = data if isinstance(data, list) else (data.get("posts", data.get("items", [])) if isinstance(data, dict) else [])
+                if isinstance(data, dict) and bool(data.get("id") or data.get("postId") or data.get("PostId")) and not raw_posts_check:
+                    del_id = del_id or str(data.get("id") or data.get("postId") or data.get("PostId") or "")
+                    del_title = data.get("title") or data.get("Title") or ""
+                elif raw_posts_check and del_id:
+                    for p in raw_posts_check:
+                        if isinstance(p, dict) and str(p.get("postId") or p.get("id") or p.get("PostId")) == str(del_id):
+                            del_title = p.get("title") or p.get("Title") or ""
+                            break
+
+                confirm_label = f"Yes, delete post #{del_id}" if del_id else "Yes, delete this post"
+
+                card = TextMessageCard(
+                    text=last_ai_content,
+                    suggestions=[
+                        confirm_label,
+                        "No, keep my post"
+                    ]
+                )
+                return AgentCardResponse(
+                    response_type="text_message",
+                    message=last_ai_content,
+                    card_data=card.model_dump(),
+                    metadata={"agent": "community_agent", "user_email": email, "action": "delete_confirmation", "postId": del_id}
+                )
 
             is_single_post = isinstance(data, dict) and bool(data.get("id") or data.get("postId") or data.get("PostId")) and not ("posts" in data or "items" in data)
             if is_single_post:
@@ -1818,10 +1862,15 @@ def _deterministic_card_builder(state: AgentState, ai_message: Optional[Any] = N
         "community post", "create post", "make a post", "post request", "publish post", "draft post", "new post", "community board"
     ])
     active_agent = metadata.get("agent")
-    is_non_community_agent = active_agent in ["booking_agent", "worker_matching_agent", "support_review_agent"]
+    is_delete_turn = any(kw in user_query_lower for kw in [
+        "delete", "remove", "trash", "take down", "erase", "cancel post", "drop post"
+    ]) or any(kw in lower_content for kw in [
+        "like me to delete", "confirm before i remove", "confirm before deleting", "delete it?", "remove it?"
+    ])
 
     is_draft = (
         not is_choice_turn
+        and not is_delete_turn
         and not (is_non_community_agent and not user_query_community)
         and not is_booking_context
         and (

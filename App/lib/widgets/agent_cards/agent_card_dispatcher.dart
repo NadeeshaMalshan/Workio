@@ -48,7 +48,7 @@ class AgentCardDispatcher extends StatelessWidget {
         return EditCommunityPostCard(data: data, onAction: onAction);
 
       case 'post_confirmation':
-        if (data['action'] == 'update' || data['postId'] != null) {
+        if (data['action'] == 'update') {
           return EditCommunityPostCard(data: data, onAction: onAction);
         }
         return CreateCommunityPostCard(data: data, onAction: onAction);

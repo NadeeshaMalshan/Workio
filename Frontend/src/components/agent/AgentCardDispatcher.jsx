@@ -61,7 +61,7 @@ export default function AgentCardDispatcher({ response, onAction }) {
     case 'edit_community_post':
       return <EditCommunityPostCard data={card_data} onAction={onAction} />;
     case 'post_confirmation':
-      if (card_data?.action === 'update' || Boolean(card_data?.postId)) {
+      if (card_data?.action === 'update') {
         return <EditCommunityPostCard data={card_data} onAction={onAction} />;
       }
       return <CreateCommunityPostCard data={card_data} onAction={onAction} />;
