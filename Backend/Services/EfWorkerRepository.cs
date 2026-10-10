@@ -389,16 +389,16 @@ namespace Superbass.Services
             var existing = await _context.Workers.Include(w => w.Skills).FirstOrDefaultAsync(w => w.Id == id);
             if (existing == null) return null;
 
-            existing.Name = updatedWorker.Name;
-            existing.PhoneNo = updatedWorker.PhoneNo;
-            existing.ProfileImage = updatedWorker.ProfileImage;
-            existing.Description = updatedWorker.Description;
-            existing.PrimaryServiceArea = updatedWorker.PrimaryServiceArea;
+            if (!string.IsNullOrWhiteSpace(updatedWorker.Name)) existing.Name = updatedWorker.Name;
+            if (updatedWorker.PhoneNo != null) existing.PhoneNo = updatedWorker.PhoneNo;
+            if (!string.IsNullOrWhiteSpace(updatedWorker.ProfileImage)) existing.ProfileImage = updatedWorker.ProfileImage;
+            if (updatedWorker.Description != null) existing.Description = updatedWorker.Description;
+            if (!string.IsNullOrWhiteSpace(updatedWorker.PrimaryServiceArea)) existing.PrimaryServiceArea = updatedWorker.PrimaryServiceArea;
             if (!string.IsNullOrWhiteSpace(updatedWorker.Province)) existing.Province = updatedWorker.Province;
             if (!string.IsNullOrWhiteSpace(updatedWorker.District)) existing.District = updatedWorker.District;
-            existing.PricingModel = updatedWorker.PricingModel;
-            existing.HourlyRate = updatedWorker.HourlyRate;
-            existing.DailyRate = updatedWorker.DailyRate;
+            if (!string.IsNullOrWhiteSpace(updatedWorker.PricingModel)) existing.PricingModel = updatedWorker.PricingModel;
+            if (updatedWorker.HourlyRate.HasValue && updatedWorker.HourlyRate > 0) existing.HourlyRate = updatedWorker.HourlyRate;
+            if (updatedWorker.DailyRate.HasValue && updatedWorker.DailyRate > 0) existing.DailyRate = updatedWorker.DailyRate;
             existing.IsAvailable = updatedWorker.IsAvailable;
 
             await _context.SaveChangesAsync();
