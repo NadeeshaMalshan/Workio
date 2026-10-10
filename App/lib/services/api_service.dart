@@ -727,6 +727,78 @@ class ApiService {
     }
   }
 
+  /// Update Worker Bio & Personal details: PUT /api/workers/{id}/bio with fallback to PUT /api/workers/{id}
+  Future<bool> updateWorkerBio(
+    int workerId, {
+    required String name,
+    required String phoneNo,
+    required String description,
+    String? profileImage,
+    WorkerModel? currentWorker,
+  }) async {
+    try {
+      final bioUri = Uri.parse('${ApiConfig.baseUrl}/api/workers/$workerId/bio');
+      final bioPayload = <String, dynamic>{
+        'name': name,
+        'phoneNo': phoneNo,
+        'description': description,
+      };
+      if (profileImage != null) {
+        bioPayload['profileImage'] = profileImage;
+      }
+      final bioResponse = await http.put(
+        bioUri,
+        headers: _headers,
+        body: jsonEncode(bioPayload),
+      );
+      if (bioResponse.statusCode >= 200 && bioResponse.statusCode < 300) {
+        return true;
+      }
+
+      // If /bio returns 404 (e.g. Render hosted backend has not deployed the new route yet),
+      // fall back to standard PUT /api/workers/{id}
+      if (bioResponse.statusCode == 404) {
+        debugPrint('/api/workers/$workerId/bio 404. Falling back to PUT /api/workers/$workerId');
+        final fallbackUri = Uri.parse('${ApiConfig.baseUrl}/api/workers/$workerId');
+        final fallbackPayload = <String, dynamic>{
+          'id': workerId,
+          'email': currentWorker?.email ?? AuthService().currentUser?.email ?? '',
+          'name': name,
+          'phoneNo': phoneNo,
+          'description': description,
+          'profileImage': profileImage ?? currentWorker?.profileImage,
+          'primaryServiceArea': currentWorker?.primaryServiceArea ?? 'Colombo',
+          'coverageRadiusKm': currentWorker?.coverageRadiusKm ?? 10.0,
+          'pricingModel': currentWorker?.pricingModel ?? 'Hourly',
+          'hourlyRate': currentWorker?.hourlyRate ?? 1500.0,
+          'dailyRate': currentWorker?.dailyRate ?? 8000.0,
+          'isAvailable': currentWorker?.isAvailable ?? true,
+        };
+        if (currentWorker?.availabilityScheduleJson != null) {
+          fallbackPayload['availabilityScheduleJson'] = currentWorker!.availabilityScheduleJson;
+        }
+        if (currentWorker?.locationLat != null) {
+          fallbackPayload['locationLat'] = currentWorker!.locationLat;
+        }
+        if (currentWorker?.locationLng != null) {
+          fallbackPayload['locationLng'] = currentWorker!.locationLng;
+        }
+        final fallbackResponse = await http.put(
+          fallbackUri,
+          headers: _headers,
+          body: jsonEncode(fallbackPayload),
+        );
+        return fallbackResponse.statusCode >= 200 && fallbackResponse.statusCode < 300;
+      }
+
+      debugPrint('Failed to update worker bio (${bioResponse.statusCode}): ${bioResponse.body}');
+      return false;
+    } catch (e) {
+      debugPrint('Error updating worker bio: $e');
+      return false;
+    }
+  }
+
   /// Update Worker Password: PUT /api/workers/{id}/password
   Future<bool> updateWorkerPassword(int workerId, String newPassword) async {
     try {
@@ -792,6 +864,7 @@ class ApiService {
     required String email,
     required String name,
     required String phoneNo,
+    String? address,
     String? profileImage,
     String? description,
     required String primaryServiceArea,
@@ -814,6 +887,7 @@ class ApiService {
           'email': email,
           'name': name,
           'phoneNo': phoneNo,
+          'address': address,
           'profileImage': profileImage,
           'description': description,
           'primaryServiceArea': primaryServiceArea,
