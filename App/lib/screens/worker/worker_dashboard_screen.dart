@@ -31,6 +31,7 @@ class _WorkerDashboardScreenState extends State<WorkerDashboardScreen> {
   WorkerModel? _worker;
   Map<String, dynamic>? _performance;
   BookingModel? _recentReview;
+  List<BookingModel> _allBookings = [];
   bool _isLoading = true;
   String _selectedOverviewPeriod = 'All time';
   String _currentLocation = 'Colombo';
@@ -85,6 +86,7 @@ class _WorkerDashboardScreenState extends State<WorkerDashboardScreen> {
           setState(() {
             _worker = worker;
             _performance = perf;
+            _allBookings = allBookings;
             if (reviewed.isNotEmpty) {
               _recentReview = reviewed.first;
             }
@@ -283,12 +285,24 @@ class _WorkerDashboardScreenState extends State<WorkerDashboardScreen> {
     final firstName = (fullName.trim().split(' ').first).isNotEmpty ? fullName.trim().split(' ').first : 'Super';
 
     // Performance metrics
-    final rawOverall = _performance?['overallRating'] ??
+    num? rawOverall = (_performance?['overallRating'] ??
         _performance?['OverallRating'] ??
-        worker?.overallRating;
-    final overallStr = rawOverall != null
-        ? (rawOverall as num).toStringAsFixed(1)
-        : '5.0';
+        worker?.overallRating) as num?;
+
+    // If worker profile has no rating stored yet, compute directly from real reviewed bookings
+    if ((rawOverall == null || rawOverall <= 0) && _allBookings.isNotEmpty) {
+      final ratings = _allBookings
+          .where((b) => b.reviewRating != null && b.reviewRating! > 0)
+          .map((b) => b.reviewRating!)
+          .toList();
+      if (ratings.isNotEmpty) {
+        rawOverall = ratings.reduce((a, b) => a + b) / ratings.length;
+      }
+    }
+
+    final overallStr = (rawOverall != null && rawOverall > 0)
+        ? rawOverall.toDouble().toStringAsFixed(1)
+        : 'N/A';
 
     final rawCompletion =
         _performance?['completionRate'] ?? _performance?['CompletionRate'];
@@ -384,73 +398,77 @@ class _WorkerDashboardScreenState extends State<WorkerDashboardScreen> {
             const SizedBox(height: 20),
 
             // 4. Online Availability Black Card
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
-              decoration: BoxDecoration(
-                color: Colors.black,
-                borderRadius: BorderRadius.circular(22),
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Container(
-                            width: 8,
-                            height: 8,
-                            decoration: BoxDecoration(
-                              color: widget.isOnline
-                                  ? const Color(0xFF00C853)
-                                  : const Color(0xFF71717A),
-                              shape: BoxShape.circle,
+            GestureDetector(
+              onTap: () => widget.onToggleOnline?.call(),
+              behavior: HitTestBehavior.opaque,
+              child: Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
+                decoration: BoxDecoration(
+                  color: Colors.black,
+                  borderRadius: BorderRadius.circular(22),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Container(
+                              width: 8,
+                              height: 8,
+                              decoration: BoxDecoration(
+                                color: widget.isOnline
+                                    ? const Color(0xFF00C853)
+                                    : const Color(0xFF71717A),
+                                shape: BoxShape.circle,
+                              ),
                             ),
-                          ),
-                          const SizedBox(width: 8),
-                          Text(
-                            widget.isOnline ? "You're online" : "You're offline",
-                            style: GoogleFonts.dmSans(
-                              fontSize: 17,
-                              fontWeight: FontWeight.w800,
-                              color: Colors.white,
-                              letterSpacing: -0.3,
+                            const SizedBox(width: 8),
+                            Text(
+                              widget.isOnline ? "You're online" : "You're offline",
+                              style: GoogleFonts.dmSans(
+                                fontSize: 17,
+                                fontWeight: FontWeight.w800,
+                                color: Colors.white,
+                                letterSpacing: -0.3,
+                              ),
                             ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        widget.isOnline
-                            ? 'Residents can book your services'
-                            : 'Toggle on when ready to work',
-                        style: GoogleFonts.dmSans(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w400,
-                          color: const Color(0xFF94A3B8),
+                          ],
                         ),
-                      ),
-                    ],
-                  ),
-                  Transform.scale(
-                    scale: 0.95,
-                    child: Switch(
-                      value: widget.isOnline,
-                      onChanged: (_) => widget.onToggleOnline?.call(),
-                      trackColor: WidgetStateProperty.resolveWith<Color>((states) {
-                        if (states.contains(WidgetState.selected)) {
-                          return const Color(0xFF00C853);
-                        }
-                        return const Color(0xFF27272A);
-                      }),
-                      thumbColor: WidgetStateProperty.all(Colors.white),
-                      trackOutlineColor: WidgetStateProperty.all(Colors.transparent),
-                      thumbIcon: WidgetStateProperty.all(const Icon(null)),
+                        const SizedBox(height: 4),
+                        Text(
+                          widget.isOnline
+                              ? 'Residents can book your services'
+                              : 'Toggle on when ready to work',
+                          style: GoogleFonts.dmSans(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w400,
+                            color: const Color(0xFF94A3B8),
+                          ),
+                        ),
+                      ],
                     ),
-                  ),
-                ],
+                    Transform.scale(
+                      scale: 0.95,
+                      child: Switch(
+                        value: widget.isOnline,
+                        onChanged: (_) => widget.onToggleOnline?.call(),
+                        trackColor: WidgetStateProperty.resolveWith<Color>((states) {
+                          if (states.contains(WidgetState.selected)) {
+                            return const Color(0xFF00C853);
+                          }
+                          return const Color(0xFF27272A);
+                        }),
+                        thumbColor: WidgetStateProperty.all(Colors.white),
+                        trackOutlineColor: WidgetStateProperty.all(Colors.transparent),
+                        thumbIcon: WidgetStateProperty.all(const Icon(null)),
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
             const SizedBox(height: 28),

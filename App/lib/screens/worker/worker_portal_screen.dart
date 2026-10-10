@@ -6,6 +6,7 @@ import '../../services/auth_service.dart';
 import '../../services/chat_signalr_service.dart';
 import '../../theme/worker_colors.dart';
 import '../../widgets/m3_bottom_nav_bar.dart';
+import '../../widgets/availability_confirm_dialog.dart';
 import 'worker_chats_screen.dart';
 import 'worker_dashboard_screen.dart';
 import 'worker_jobs_screen.dart';
@@ -58,26 +59,32 @@ class _WorkerPortalScreenState extends State<WorkerPortalScreen> {
   Future<void> _toggleAvailability() async {
     if (_isTogglingStatus || _worker == null) return;
 
-    final newStatus = !_isOnline;
+    final targetOnline = !_isOnline;
+    final confirmed = await showAvailabilityConfirmDialog(
+      context,
+      targetOnline: targetOnline,
+    );
+    if (!confirmed) return;
+
     setState(() {
       _isTogglingStatus = true;
-      _isOnline = newStatus;
+      _isOnline = targetOnline;
     });
 
     final success = await ApiService().updateWorkerAvailability(
       _worker!.id,
-      isAvailable: newStatus,
+      isAvailable: targetOnline,
     );
 
     if (mounted) {
       setState(() => _isTogglingStatus = false);
       if (!success) {
         // Rollback on failure
-        setState(() => _isOnline = !newStatus);
+        setState(() => _isOnline = !targetOnline);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              'Failed to update availability.',
+              'Failed to update availability on server.',
               style: GoogleFonts.dmSans(),
             ),
             backgroundColor: WorkerColors.error,
@@ -87,12 +94,12 @@ class _WorkerPortalScreenState extends State<WorkerPortalScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              newStatus
+              targetOnline
                   ? '✓ You are now Available for new jobs!'
-                  : 'You are now Offline.',
+                  : 'You are now Currently Offline.',
               style: GoogleFonts.dmSans(fontWeight: FontWeight.w600),
             ),
-            backgroundColor: newStatus
+            backgroundColor: targetOnline
                 ? WorkerColors.success
                 : WorkerColors.onSurface,
             behavior: SnackBarBehavior.floating,

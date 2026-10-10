@@ -10,6 +10,8 @@ import '../../services/auth_service.dart';
 import '../../theme/worker_colors.dart';
 import '../../widgets/verified_badge.dart';
 import '../../widgets/verification_form.dart';
+import '../../widgets/availability_confirm_dialog.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class WorkerProfileScreen extends StatefulWidget {
   final WorkerModel? worker;
@@ -476,10 +478,111 @@ class _WorkerProfileScreenState extends State<WorkerProfileScreen> {
     );
   }
 
-//check
   Future<void> _handleRemoveSkill(WorkerSkillItem skill) async {
     final workerId = widget.worker?.id;
     if (workerId == null) return;
+
+    // Guard: A worker must have at least one active service
+    if (_skills.length <= 1) {
+      await showDialog(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.amber.shade50,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Icon(Icons.warning_amber_rounded, color: Colors.amber.shade800, size: 24),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  'Cannot Delete Service',
+                  style: GoogleFonts.dmSans(fontWeight: FontWeight.w800, fontSize: 17),
+                ),
+              ),
+            ],
+          ),
+          content: Text(
+            'You cannot delete your only active service. Workers must have at least one service on their profile to accept jobs.\n\nPlease add another service first before removing this one.',
+            style: GoogleFonts.dmSans(fontSize: 14, color: WorkerColors.onSurfaceVariant, height: 1.4),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: Text('Cancel', style: GoogleFonts.dmSans(fontWeight: FontWeight.w600, color: Colors.grey.shade700)),
+            ),
+            ElevatedButton.icon(
+              onPressed: () {
+                Navigator.pop(ctx);
+                _showAddServiceDialog();
+              },
+              icon: const Icon(Icons.add_rounded, size: 16),
+              label: Text('Add Another Service', style: GoogleFonts.dmSans(fontWeight: FontWeight.w700)),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: WorkerColors.primary,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              ),
+            ),
+          ],
+        ),
+      );
+      return;
+    }
+
+    final serviceTitle = skill.serviceName.isNotEmpty ? skill.serviceName : skill.skillName;
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: Colors.red.shade50,
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: const Icon(Icons.delete_outline_rounded, color: WorkerColors.error, size: 24),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                'Delete Service',
+                style: GoogleFonts.dmSans(fontWeight: FontWeight.w800, fontSize: 17),
+              ),
+            ),
+          ],
+        ),
+        content: Text(
+          'Are you sure you want to remove "$serviceTitle" from your active services?',
+          style: GoogleFonts.dmSans(fontSize: 14, color: WorkerColors.onSurfaceVariant),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: Text('Cancel', style: GoogleFonts.dmSans(fontWeight: FontWeight.w600, color: Colors.grey.shade700)),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: WorkerColors.error,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            ),
+            child: Text('Delete', style: GoogleFonts.dmSans(fontWeight: FontWeight.w700)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true) return;
 
     setState(() => _isSaving = true);
     final success = await ApiService().removeWorkerSkill(workerId, skill.id);
@@ -487,11 +590,63 @@ class _WorkerProfileScreenState extends State<WorkerProfileScreen> {
       setState(() => _isSaving = false);
       if (success) {
         _skills.removeWhere((s) => s.id == skill.id);
-        final label = skill.serviceName.isNotEmpty ? skill.serviceName : skill.skillName;
-        _showFeedback('Service "$label" removed.');
+        _showFeedback('Service "$serviceTitle" removed.');
         widget.onWorkerUpdated?.call();
       } else {
         _showFeedback('Could not remove service.', isError: true);
+      }
+    }
+  }
+
+  // 1. Save Bio & Personal Details
+  Future<void> _handleSaveBio() async {
+    final workerId = widget.worker?.id;
+    if (workerId == null) {
+      _showFeedback('Worker profile not loaded yet.', isError: true);
+      return;
+    }
+
+    final name = _nameController.text.trim();
+    if (name.isEmpty) {
+      _showFeedback('Full name cannot be empty.', isError: true);
+      return;
+    }
+
+    final phone = _phoneController.text.trim();
+    if (phone.isNotEmpty && !RegExp(r'^0\d{9}$').hasMatch(phone)) {
+      _showFeedback('Phone number must be exactly 10 digits starting with 0.', isError: true);
+      return;
+    }
+
+    final description = _descController.text.trim();
+
+    setState(() => _isSaving = true);
+
+    final success = await ApiService().updateWorkerBio(
+      workerId,
+      name: name,
+      phoneNo: phone,
+      description: description,
+      currentWorker: widget.worker,
+    );
+
+    if (mounted) {
+      setState(() => _isSaving = false);
+      if (success) {
+        // Sync current user name in AuthService & SharedPreferences if name changed
+        final user = AuthService().currentUserNotifier.value;
+        if (user != null && user.name != name) {
+          AuthService().currentUserNotifier.value = user.copyWith(name: name);
+          try {
+            final prefs = await SharedPreferences.getInstance();
+            await prefs.setString('userName', name);
+          } catch (_) {}
+        }
+
+        _showFeedback('Bio details saved successfully!');
+        widget.onWorkerUpdated?.call();
+      } else {
+        _showFeedback('Failed to save bio details.', isError: true);
       }
     }
   }
@@ -894,15 +1049,8 @@ class _WorkerProfileScreenState extends State<WorkerProfileScreen> {
               const SizedBox(height: 14),
               _buildSaveButton(
                 label: 'Save Bio Details',
-                onPressed: () {
-                  final phone = _phoneController.text.trim();
-                  if (phone.isNotEmpty && !RegExp(r'^0\d{9}$').hasMatch(phone)) {
-                    _showFeedback('Phone number must be exactly 10 digits starting with 0.', isError: true);
-                    return;
-                  }
-                  _showFeedback('Bio details saved!');
-                  widget.onWorkerUpdated?.call();
-                },
+                isLoading: _isSaving,
+                onPressed: _isSaving ? null : _handleSaveBio,
               ),
             ],
           ),
@@ -1189,7 +1337,12 @@ class _WorkerProfileScreenState extends State<WorkerProfileScreen> {
                     Switch(
                       value: _isAvailable,
                       activeThumbColor: WorkerColors.online,
-                      onChanged: (val) {
+                      onChanged: (val) async {
+                        final confirmed = await showAvailabilityConfirmDialog(
+                          context,
+                          targetOnline: val,
+                        );
+                        if (!confirmed) return;
                         setState(() => _isAvailable = val);
                         widget.onAvailabilityChanged?.call(val);
                       },
@@ -1409,25 +1562,36 @@ class _WorkerProfileScreenState extends State<WorkerProfileScreen> {
   Widget _buildSaveButton({
     required String label,
     required VoidCallback? onPressed,
+    bool isLoading = false,
   }) {
     return SizedBox(
       width: double.infinity,
       height: 46,
       child: ElevatedButton(
-        onPressed: onPressed,
+        onPressed: isLoading ? null : onPressed,
         style: ElevatedButton.styleFrom(
           backgroundColor: WorkerColors.primary,
           foregroundColor: Colors.white,
+          disabledBackgroundColor: WorkerColors.primary.withValues(alpha: 0.6),
           shape: const StadiumBorder(),
           elevation: 0,
         ),
-        child: Text(
-          label,
-          style: GoogleFonts.dmSans(
-            fontSize: 14,
-            fontWeight: FontWeight.w700,
-          ),
-        ),
+        child: isLoading
+            ? const SizedBox(
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                ),
+              )
+            : Text(
+                label,
+                style: GoogleFonts.dmSans(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
       ),
     );
   }
