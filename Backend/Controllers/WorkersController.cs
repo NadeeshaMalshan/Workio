@@ -192,6 +192,12 @@ namespace Superbass.Controllers
         [HttpDelete("{id}/skills/{skillId}")]
         public async Task<IActionResult> RemoveSkill(int id, int skillId)
         {
+            var totalSkills = await _dbContext.WorkerSkills.CountAsync(s => s.WorkerId == id);
+            if (totalSkills <= 1)
+            {
+                return BadRequest(new { message = "You cannot delete your only active service. A worker must offer at least one service. Please add another service first." });
+            }
+
             var success = await _workerRepository.RemoveSkillAsync(id, skillId);
             if (!success) return NotFound();
             return NoContent();
@@ -222,6 +228,46 @@ namespace Superbass.Controllers
             var success = await _workerRepository.UpdateServiceAreaAsync(id, dto.ServiceArea, dto.RadiusKm);
             if (!success) return NotFound();
             return Ok(new { message = "Service area updated successfully" });
+        }
+
+        // PUT /api/workers/{id}/bio
+        [HttpPut("{id}/bio")]
+        public async Task<IActionResult> UpdateBio(int id, [FromBody] WorkerBioUpdateDto dto)
+        {
+            var worker = await _dbContext.Workers.FindAsync(id);
+            if (worker == null) return NotFound(new { message = "Worker not found" });
+
+            if (!string.IsNullOrWhiteSpace(dto.Name))
+            {
+                worker.Name = dto.Name.Trim();
+            }
+            if (dto.PhoneNo != null)
+            {
+                worker.PhoneNo = dto.PhoneNo.Trim();
+            }
+            if (dto.Description != null)
+            {
+                worker.Description = dto.Description.Trim();
+            }
+            if (!string.IsNullOrWhiteSpace(dto.ProfileImage))
+            {
+                worker.ProfileImage = dto.ProfileImage;
+            }
+
+            await _dbContext.SaveChangesAsync();
+
+            return Ok(new 
+            { 
+                message = "Bio details updated successfully",
+                worker = new 
+                {
+                    worker.Id,
+                    worker.Name,
+                    worker.PhoneNo,
+                    worker.Description,
+                    worker.ProfileImage
+                }
+            });
         }
 
         // POST /api/workers/{id}/verify
@@ -546,6 +592,14 @@ namespace Superbass.Controllers
         public class PasswordUpdateDto
         {
             public string NewPassword { get; set; } = string.Empty;
+        }
+
+        public class WorkerBioUpdateDto
+        {
+            public string? Name { get; set; }
+            public string? PhoneNo { get; set; }
+            public string? Description { get; set; }
+            public string? ProfileImage { get; set; }
         }
 
         public class WorkerOnboardingDto
