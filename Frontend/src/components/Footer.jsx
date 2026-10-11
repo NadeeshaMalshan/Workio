@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import './Footer.css';
 import workioLogoWhite from '../assets/Workio_Logo/Workio_Logo_White_With_Text.png';
+import androidApkBadge from '../assets/download-android-apk.png';
 
 export default function Footer() {
   const [selectedLanguage, setSelectedLanguage] = useState('English');
@@ -75,28 +76,22 @@ export default function Footer() {
           <div className="uber-footer-social-and-apps">
 
 
-            {/* App Store Download Badges */}
+            {/* App Store / APK Download Badges */}
             <div className="uber-footer-app-badges">
-              {/* Google Play Store Badge */}
+              {/* Android APK Download Badge */}
               <a
                 href="https://drive.google.com/drive/folders/1kHF2igKue5_j_IEn70Wc4cFsKpLUZRfZ?usp=drive_link"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="uber-app-badge-btn"
-                title="Download Workio on Google Play"
+                className="uber-app-badge-link"
+                title="Download Workio Android APK"
               >
-                <svg className="uber-badge-icon" viewBox="0 0 24 24" width="22" height="22">
-                  <path fill="#4285F4" d="M3.6 2.4l10.8 10.8L3.6 24c-.4-.5-.6-1.2-.6-2V4.4c0-.8.2-1.5.6-2z" />
-                  <path fill="#FBBC05" d="M17.8 8.8l-3.4 3.4L3.6 2.4c.4-.4 1-.5 1.6-.2l12.6 6.6z" />
-                  <path fill="#34A853" d="M17.8 15.2L5.2 21.8c-.6.3-1.2.2-1.6-.2l10.8-10.8 3.4 3.4z" />
-                  <path fill="#EA4335" d="M21.6 10.8c.5.3.8.8.8 1.2s-.3.9-.8 1.2l-3.8 2-3.4-3.2 3.4-3.2 3.8 2z" />
-                </svg>
-                <div className="uber-badge-text-wrap">
-                  <span className="uber-badge-sub">GET IT ON</span>
-                  <span className="uber-badge-title">Google Play</span>
-                </div>
+                <img
+                  src={androidApkBadge}
+                  alt="Download Workio Android APK"
+                  className="uber-app-badge-img"
+                />
               </a>
-
             </div>
           </div>
 
@@ -148,14 +143,10 @@ export default function Footer() {
         {/* Bottom Legal & Copyright Row */}
         <div className="uber-footer-bottom">
           <div className="uber-footer-copyright">
-            © 2026 Workio Technologies Inc.
+            © 2026 Workio Inc.
           </div>
 
-          <div className="uber-footer-legal-links">
-            <a href="#privacy" onClick={(e) => { e.preventDefault(); navigate('/community'); }}>Privacy</a>
-            <a href="#accessibility" onClick={(e) => { e.preventDefault(); navigate('/community'); }}>Accessibility</a>
-            <a href="#terms" onClick={(e) => { e.preventDefault(); navigate('/community'); }}>Terms</a>
-          </div>
+
         </div>
 
       </div>

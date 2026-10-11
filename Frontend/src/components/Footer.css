@@ -168,6 +168,31 @@
   gap: 14px;
 }
 
+.uber-app-badge-link {
+  display: inline-flex;
+  align-items: center;
+  text-decoration: none;
+  border-radius: 8px;
+  border: 1px solid #383838;
+  overflow: hidden;
+  transition: border-color 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
+  user-select: none;
+  background-color: #000000;
+}
+
+.uber-app-badge-link:hover {
+  border-color: #ffffff;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 14px rgba(255, 255, 255, 0.08);
+}
+
+.uber-app-badge-img {
+  height: 42px;
+  width: auto;
+  display: block;
+  object-fit: contain;
+}
+
 .uber-app-badge-btn {
   display: inline-flex;
   align-items: center;
