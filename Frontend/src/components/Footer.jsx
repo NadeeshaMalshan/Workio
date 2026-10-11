@@ -35,19 +35,7 @@ export default function Footer() {
 
         {/* 4 Multi-Column Directory */}
         <div className="uber-footer-columns">
-          {/* Column 1: Company */}
-          <div className="uber-footer-col">
-            <h4 className="uber-footer-col-title">Company</h4>
-            <ul className="uber-footer-links-list">
-              <li><a href="#home" onClick={(e) => { e.preventDefault(); navigate('/'); }}>About us</a></li>
-              <li><a href="#services" onClick={(e) => { e.preventDefault(); navigate('/find'); }}>Our offerings</a></li>
-              <li><a href="/community" onClick={(e) => { e.preventDefault(); navigate('/community'); }}>Community Hub</a></li>
-              <li><a href="#trust" onClick={(e) => { e.preventDefault(); navigate('/community'); }}>Trust & Safety</a></li>
-              <li><a href="#blog" onClick={(e) => { e.preventDefault(); navigate('/community'); }}>Newsroom & Blog</a></li>
-              <li><a href="/join" onClick={(e) => { e.preventDefault(); navigate('/join'); }}>Careers at Workio</a></li>
-              <li><a href="/find" onClick={(e) => { e.preventDefault(); navigate('/find'); }}>Workio Pro</a></li>
-            </ul>
-          </div>
+
 
           {/* Column 2: Products / Services */}
           <div className="uber-footer-col">
