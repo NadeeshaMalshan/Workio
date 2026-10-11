@@ -69,8 +69,18 @@ class _WorkerPerformanceScreenState extends State<WorkerPerformanceScreen> {
     }
 
     final num? rawOverall = (_performance?['overallRating'] ?? _performance?['OverallRating'] ?? widget.worker?.overallRating) as num?;
-    final bool hasRating = rawOverall != null && rawOverall > 0;
-    final double overallScore = hasRating ? rawOverall.toDouble() : 5.0;
+    num? calculatedOverall = rawOverall;
+    if ((calculatedOverall == null || calculatedOverall <= 0) && _reviewedBookings.isNotEmpty) {
+      final ratings = _reviewedBookings
+          .where((b) => b.reviewRating != null && b.reviewRating! > 0)
+          .map((b) => b.reviewRating!)
+          .toList();
+      if (ratings.isNotEmpty) {
+        calculatedOverall = ratings.reduce((a, b) => a + b) / ratings.length;
+      }
+    }
+    final bool hasRating = calculatedOverall != null && calculatedOverall > 0;
+    final double overallScore = hasRating ? calculatedOverall.toDouble() : 0.0;
 
     final rawQuality = (_performance?['qualityRating'] ?? _performance?['QualityRating'] ?? widget.worker?.qualityRating) as num?;
     final rawPunctuality = (_performance?['punctualityRating'] ?? _performance?['PunctualityRating'] ?? widget.worker?.punctualityRating) as num?;
@@ -159,7 +169,7 @@ class _WorkerPerformanceScreenState extends State<WorkerPerformanceScreen> {
                         children: [
                           // Large Rating Score
                           Text(
-                            hasRating ? overallScore.toStringAsFixed(1) : '5.0',
+                            hasRating ? overallScore.toStringAsFixed(1) : 'N/A',
                             style: GoogleFonts.dmSans(
                               fontSize: 48,
                               fontWeight: FontWeight.w900,
@@ -176,7 +186,7 @@ class _WorkerPerformanceScreenState extends State<WorkerPerformanceScreen> {
                                 Row(
                                   children: List.generate(5, (starIdx) {
                                     return Icon(
-                                      starIdx < overallScore.round()
+                                      hasRating && starIdx < overallScore.round()
                                           ? Icons.star_rounded
                                           : Icons.star_border_rounded,
                                       color: const Color(0xFFF59E0B),
@@ -188,7 +198,7 @@ class _WorkerPerformanceScreenState extends State<WorkerPerformanceScreen> {
                                 Text(
                                   _reviewedBookings.isNotEmpty
                                       ? 'Based on ${_reviewedBookings.length} ${_reviewedBookings.length == 1 ? "client review" : "client reviews"}'
-                                      : 'Verified Worker Profile',
+                                      : 'No client reviews yet',
                                   style: GoogleFonts.dmSans(
                                     fontSize: 13,
                                     fontWeight: FontWeight.w500,

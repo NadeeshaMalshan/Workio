@@ -24,7 +24,6 @@ class _WorkioAiScreenState extends State<WorkioAiScreen> {
   final ScrollController _scrollController = ScrollController();
   final FocusNode _focusNode = FocusNode();
 
-  String? _selectedEmergencyService;
   bool _isLoading = false;
   String _conversationId = 'conv_${DateTime.now().millisecondsSinceEpoch}';
 
@@ -195,7 +194,6 @@ class _WorkioAiScreenState extends State<WorkioAiScreen> {
     if (mounted) {
       _inputController.clear();
       setState(() {
-        _selectedEmergencyService = null;
         _initChat();
       });
       _scrollToBottom();
@@ -489,7 +487,7 @@ class _WorkioAiScreenState extends State<WorkioAiScreen> {
               ),
             ),
 
-            // Bottom Section: Quick Actions, Emergency Services, and Input Bar
+            // Bottom Section: Input Bar
             _buildBottomControls(),
           ],
         ),
@@ -924,194 +922,58 @@ class _WorkioAiScreenState extends State<WorkioAiScreen> {
         color: Colors.white,
         border: Border(top: BorderSide(color: Color(0xFFF1F3F5))),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const SizedBox(height: 10),
-
-          // QUICK ACTIONS
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: Text(
-              'QUICK ACTIONS',
-              style: GoogleFonts.dmSans(
-                fontSize: 11,
-                fontWeight: FontWeight.w800,
-                letterSpacing: 0.8,
-                color: const Color(0xFF64748B),
-              ),
-            ),
-          ),
-          const SizedBox(height: 8),
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: Row(
-              children: [
-                _buildActionChip(
-                  label: 'Recent posts',
-                  onTap: () => _sendMessage('Show recent community service posts'),
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(16, 10, 16, 12),
+        child: Row(
+          children: [
+            Expanded(
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 18),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF1F3F5),
+                  borderRadius: BorderRadius.circular(26),
                 ),
-                const SizedBox(width: 8),
-                _buildActionChip(
-                  label: 'Find craftsmen',
-                  onTap: () => _sendMessage('Find top recommended craftsmen near me'),
-                ),
-                const SizedBox(width: 8),
-                _buildActionChip(
-                  label: 'My posts',
-                  onTap: () => _sendMessage('Show my community posts and requests'),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 12),
-
-          // EMERGENCY SERVICES
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: Text(
-              'EMERGENCY SERVICES',
-              style: GoogleFonts.dmSans(
-                fontSize: 11,
-                fontWeight: FontWeight.w800,
-                letterSpacing: 0.8,
-                color: const Color(0xFF64748B),
-              ),
-            ),
-          ),
-          const SizedBox(height: 8),
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: Row(
-              children: [
-                _buildEmergencyChip('Plumber'),
-                const SizedBox(width: 8),
-                _buildEmergencyChip('Electrician'),
-                const SizedBox(width: 8),
-                _buildEmergencyChip('AC repair'),
-                const SizedBox(width: 8),
-                _buildEmergencyChip('Cleaner'),
-                const SizedBox(width: 8),
-                _buildEmergencyChip('Carpenter'),
-                const SizedBox(width: 8),
-                _buildEmergencyChip('Painter'),
-              ],
-            ),
-          ),
-          const SizedBox(height: 12),
-
-          // Input Bar with Send Button
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-            child: Row(
-              children: [
-                Expanded(
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 18),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFF1F3F5),
-                      borderRadius: BorderRadius.circular(26),
+                child: TextField(
+                  controller: _inputController,
+                  focusNode: _focusNode,
+                  style: GoogleFonts.dmSans(
+                    fontSize: 14.5,
+                    color: Colors.black,
+                  ),
+                  textInputAction: TextInputAction.send,
+                  onSubmitted: _sendMessage,
+                  decoration: InputDecoration(
+                    hintText: 'Ask anything or create a post',
+                    hintStyle: GoogleFonts.dmSans(
+                      fontSize: 14,
+                      color: const Color(0xFF64748B),
                     ),
-                    child: TextField(
-                      controller: _inputController,
-                      focusNode: _focusNode,
-                      style: GoogleFonts.dmSans(
-                        fontSize: 14.5,
-                        color: Colors.black,
-                      ),
-                      textInputAction: TextInputAction.send,
-                      onSubmitted: _sendMessage,
-                      decoration: InputDecoration(
-                        hintText: 'Ask anything or create a post',
-                        hintStyle: GoogleFonts.dmSans(
-                          fontSize: 14,
-                          color: const Color(0xFF64748B),
-                        ),
-                        border: InputBorder.none,
-                        contentPadding: const EdgeInsets.symmetric(vertical: 14),
-                      ),
-                    ),
+                    border: InputBorder.none,
+                    contentPadding: const EdgeInsets.symmetric(vertical: 14),
                   ),
                 ),
-                const SizedBox(width: 10),
-
-                // Solid Black Circular Send Button
-                GestureDetector(
-                  onTap: () => _sendMessage(_inputController.text),
-                  child: Container(
-                    width: 48,
-                    height: 48,
-                    decoration: const BoxDecoration(
-                      color: Colors.black,
-                      shape: BoxShape.circle,
-                    ),
-                    child: const Icon(
-                      Icons.arrow_forward_rounded,
-                      color: Colors.white,
-                      size: 22,
-                    ),
-                  ),
-                ),
-              ],
+              ),
             ),
-          ),
-        ],
-      ),
-    );
-  }
+            const SizedBox(width: 10),
 
-  Widget _buildActionChip({
-    required String label,
-    required VoidCallback onTap,
-  }) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(20),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-        decoration: BoxDecoration(
-          color: const Color(0xFFF1F3F5),
-          borderRadius: BorderRadius.circular(20),
-        ),
-        child: Text(
-          label,
-          style: GoogleFonts.dmSans(
-            fontSize: 12.5,
-            fontWeight: FontWeight.w600,
-            color: const Color(0xFF0F172A),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildEmergencyChip(String serviceName) {
-    final bool isSelected = _selectedEmergencyService == serviceName;
-
-    return InkWell(
-      onTap: () {
-        setState(() {
-          _selectedEmergencyService = isSelected ? null : serviceName;
-        });
-        _sendMessage('I need an emergency $serviceName immediately');
-      },
-      borderRadius: BorderRadius.circular(20),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-        decoration: BoxDecoration(
-          color: isSelected ? Colors.black : const Color(0xFFF1F3F5),
-          borderRadius: BorderRadius.circular(20),
-        ),
-        child: Text(
-          serviceName,
-          style: GoogleFonts.dmSans(
-            fontSize: 12.5,
-            fontWeight: FontWeight.w700,
-            color: isSelected ? Colors.white : const Color(0xFF0F172A),
-          ),
+            // Solid Black Circular Send Button
+            GestureDetector(
+              onTap: () => _sendMessage(_inputController.text),
+              child: Container(
+                width: 48,
+                height: 48,
+                decoration: const BoxDecoration(
+                  color: Colors.black,
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.arrow_forward_rounded,
+                  color: Colors.white,
+                  size: 22,
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );

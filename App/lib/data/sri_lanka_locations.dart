@@ -390,12 +390,44 @@ class SriLankaLocations {
     return list;
   }
 
-  /// Get list of DS divisions for a given district
-  static List<String> getDsDivisions(String? district) {
-    if (district == null || !districtDsMap.containsKey(district)) {
-      return [];
+  /// Map of Sri Lanka Provinces to their Districts
+  static const Map<String, List<String>> provinceDistrictMap = {
+    "Western Province": ["Colombo", "Gampaha", "Kalutara"],
+    "Central Province": ["Kandy", "Matale", "Nuwara Eliya"],
+    "Southern Province": ["Galle", "Matara", "Hambantota"],
+    "Northern Province": ["Jaffna", "Kilinochchi", "Mannar", "Mullaitivu", "Vavuniya"],
+    "Eastern Province": ["Trincomalee", "Batticaloa", "Ampara"],
+    "North Western Province": ["Kurunegala", "Puttalam"],
+    "North Central Province": ["Anuradhapura", "Polonnaruwa"],
+    "Uva Province": ["Badulla", "Monaragala"],
+    "Sabaragamuwa Province": ["Ratnapura", "Kegalle"],
+  };
+
+  /// Get list of sorted province names
+  static List<String> get provinces => provinceDistrictMap.keys.toList();
+
+  /// Get list of districts for a given province
+  static List<String> getDistrictsForProvince(String? province) {
+    if (province == null) return districts;
+    if (provinceDistrictMap.containsKey(province)) {
+      return provinceDistrictMap[province]!;
     }
-    final list = List<String>.from(districtDsMap[district]!)..sort();
-    return list;
+    for (final entry in provinceDistrictMap.entries) {
+      if (entry.key.toLowerCase().contains(province.toLowerCase())) {
+        return entry.value;
+      }
+    }
+    return districts;
+  }
+
+  /// Get the province for a given district
+  static String? getProvinceForDistrict(String? district) {
+    if (district == null) return null;
+    for (final entry in provinceDistrictMap.entries) {
+      if (entry.value.any((d) => d.toLowerCase() == district.toLowerCase())) {
+        return entry.key;
+      }
+    }
+    return null;
   }
 }

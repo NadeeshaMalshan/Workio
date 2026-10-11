@@ -3,46 +3,22 @@ import { createPortal } from 'react-dom';
 import axios from 'axios';
 import EmojiPicker from 'emoji-picker-react';
 import './Chats.css';
-import '@material/web/progress/circular-progress.js';
-import '@material/web/progress/linear-progress.js';
 import '@material/web/dialog/dialog.js';
 import '@material/web/button/text-button.js';
 import '@material/web/button/filled-button.js';
-import '@material/web/button/outlined-button.js';
 import '@material/web/textfield/outlined-text-field.js';
 import '@material/web/icon/icon.js';
 import '@material/web/iconbutton/icon-button.js';
 import '@material/web/menu/menu.js';
 import '@material/web/menu/menu-item.js';
-import '@material/web/list/list.js';
-import '@material/web/list/list-item.js';
 import Loader from './components/Loader.jsx';
 import WorkerContactCard from './components/WorkerContactCard.jsx';
-import UserMenu from './components/UserMenu.jsx';
-import M3TopNavbar from './components/M3TopNavbar.jsx';
 import { showToast } from './utils/toast.js';
 import { BACKEND_URL } from './config.js';
 import { chatSignalR } from './services/chatSignalR.js';
 
 const API_BASE_URL = `${BACKEND_URL}/api/conversations`;
 
-const EMOJI_CATEGORIES = {
-  smileys: [
-    '😀', '😃', '😄', '😁', '😆', '😅', '😂', '🤣', '😊', '😇',
-    '🙂', '😉', '😌', '😍', '🥰', '😘', '😋', '😛', '😜', '🤪',
-    '🤗', '🤔', '🤐', '🤨', '😐', '😏', '😒', '🙄', '😬', '😴',
-    '👍', '👎', '👌', '✌️', '🤞', '🤝', '🙏', '👏', '🙌', '💪'
-  ],
-  tools: [
-    '🔧', '🔨', '🪛', '🪚', '🧰', '🔩', '⚙️', '🪜', '🚰', '🚿',
-    '💡', '🔌', '🔋', '🚪', '🔑', '🧹', '🧺', '🧽', '🧯', '📦',
-    '🏠', '🏡', '🏢', '🏗️', '🚗', '🚚', '🛵', '🕒', '📅', '💰'
-  ],
-  reactions: [
-    '❤️', '🧡', '💛', '💚', '💙', '💜', '✨', '⭐', '🔥', '🎉',
-    '💯', '🎊', '🏆', '🎯', '☀️', '🌧️', '⚡', '🌈', '✅', '❌'
-  ]
-};
 
 export default function Chats() {
   const [conversations, setConversations] = useState([]);
@@ -50,8 +26,6 @@ export default function Chats() {
   const [failedImages, setFailedImages] = useState({});
   const [workersMap, setWorkersMap] = useState({});
   const [workersList, setWorkersList] = useState([]);
-  const [workerSearchQuery, setWorkerSearchQuery] = useState('');
-  const [isWorkerDropdownOpen, setIsWorkerDropdownOpen] = useState(false);
   const [messages, setMessages] = useState([]);
   const [inputText, setInputText] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
@@ -122,7 +96,6 @@ export default function Chats() {
   const [isTyping, setIsTyping] = useState(false);
   const [isOtherUserOnline, setIsOtherUserOnline] = useState(false);
   const [otherUserLastSeen, setOtherUserLastSeen] = useState(null);
-  const [failedWorkerAvatars, setFailedWorkerAvatars] = useState({});
   const [fullScreenImage, setFullScreenImage] = useState(null);
 
   // Close full screen image preview with Escape key
@@ -142,15 +115,12 @@ export default function Chats() {
   const selectedChatRef = useRef(null);
   const typingTimerRef = useRef(null);
   const typingDebounceRef = useRef(null);
-  const workerDropdownRef = useRef(null);
 
   const currentUserEmail = localStorage.getItem('email') || localStorage.getItem('workerEmail') || '';
   const token = localStorage.getItem('token');
   const activeRole = localStorage.getItem('activeRole') || 'Resident';
   const isWorker = activeRole.toLowerCase() === 'worker' || localStorage.getItem('workerAuth') === 'true';
   const themePrimary = isWorker ? '#2563EB' : '#FDC101';
-  const themePrimaryBg = isWorker ? '#eff6ff' : '#fffbeb';
-  const themeSupportingText = isWorker ? '#2563eb' : '#b45309';
 
   const navigate = (newPath) => {
     window.history.pushState({}, '', newPath);
@@ -181,7 +151,7 @@ export default function Chats() {
         await axios.post(`${API_BASE_URL}/heartbeat`, { userEmail: currentUserEmail }, {
           headers: token ? { Authorization: `Bearer ${token}` } : {}
         });
-      } catch (e) { }
+      } catch { }
     };
     sendHeartbeat();
     const heartbeatInterval = setInterval(sendHeartbeat, 25000);
@@ -436,7 +406,7 @@ export default function Chats() {
         await axios.post(`${API_BASE_URL}/${conversationId}/read`, { readerEmail: currentUserEmail }, {
           headers: token ? { Authorization: `Bearer ${token}` } : {}
         });
-      } catch (e) { }
+      } catch { }
     } catch (err) {
       console.error('Error fetching messages:', err);
     } finally {
@@ -482,7 +452,7 @@ export default function Chats() {
             return c;
           }));
         }
-      } catch (e) {
+      } catch {
         setIsOtherUserOnline(false);
       }
     };
@@ -820,37 +790,9 @@ export default function Chats() {
       lastMsg.toLowerCase().includes(term);
   });
 
-  // Close worker search dropdown when clicking outside
-  useEffect(() => {
-    const handleClickOutside = (e) => {
-      if (workerDropdownRef.current && !workerDropdownRef.current.contains(e.target)) {
-        setIsWorkerDropdownOpen(false);
-      }
-    };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
-
-  // Filter workers based on top navbar search query
-  const matchingWorkers = workerSearchQuery.trim()
-    ? workersList.filter(w => {
-      const q = workerSearchQuery.toLowerCase();
-      const nameMatch = w.name?.toLowerCase().includes(q);
-      const areaMatch = w.primaryServiceArea?.toLowerCase().includes(q);
-      const descMatch = w.description?.toLowerCase().includes(q);
-      const skillsMatch = Array.isArray(w.skills) && w.skills.some(s => {
-        const sName = typeof s === 'string' ? s : s?.skillName;
-        return sName?.toLowerCase().includes(q);
-      });
-      return nameMatch || areaMatch || descMatch || skillsMatch;
-    })
-    : [];
-
   // Start chat with a selected worker from search dropdown
   const handleStartChatWithWorker = async (worker) => {
     if (!worker) return;
-    setIsWorkerDropdownOpen(false);
-    setWorkerSearchQuery('');
 
     // Check if conversation already exists
     const existing = conversations.find(c => {
@@ -905,154 +847,6 @@ export default function Chats() {
       }
     }
   }, [isDataLoaded, workersList]);
-
-  // Render Worker Search Results Dropdown inside Top Navbar
-  const renderWorkerSearchDropdown = () => {
-    if (!isWorkerDropdownOpen || !workerSearchQuery.trim()) return null;
-
-    return (
-      <div className="m3-search-dropdown" ref={workerDropdownRef}>
-        <div className="m3-search-dropdown-header">
-
-          <span className="m3-dropdown-hint">Press ↵ Enter to view all</span>
-        </div>
-
-        <div className="m3-search-dropdown-list">
-          {matchingWorkers.length === 0 ? (
-            <div className="m3-search-dropdown-empty">
-              <md-icon style={{ fontSize: '42px', color: '#94a3b8', marginBottom: '8px' }}>search_off</md-icon>
-              <h4>No verified workers found</h4>
-              <p>No craftsmen match "{workerSearchQuery}". Try another skill or location.</p>
-              <div style={{ marginTop: '12px' }}>
-                <md-filled-button
-                  onClick={() => {
-                    setIsWorkerDropdownOpen(false);
-                    navigate(`/find?q=${encodeURIComponent(workerSearchQuery)}`);
-                  }}
-                  style={{
-                    '--md-sys-color-primary': themePrimary,
-                    '--md-filled-button-container-color': themePrimary,
-                    '--md-filled-button-label-text-color': isWorker ? '#ffffff' : '#111827',
-                    '--md-filled-button-container-shape': '9999px',
-                    '--md-filled-button-container-height': '36px'
-                  }}
-                >
-                  <md-icon slot="icon">explore</md-icon>
-                  Browse Services Directory
-                </md-filled-button>
-              </div>
-            </div>
-          ) : (
-            matchingWorkers.slice(0, 8).map(w => {
-              const primarySkill = Array.isArray(w.skills) && w.skills.length > 0
-                ? (typeof w.skills[0] === 'string' ? w.skills[0] : w.skills[0]?.skillName)
-                : null;
-
-              const avatarUrl = w.profileImage && w.profileImage !== 'null' && w.profileImage.trim() !== ''
-                ? (w.profileImage.startsWith('http') ? w.profileImage : `${BACKEND_URL}${w.profileImage.startsWith('/') ? '' : '/'}${w.profileImage}`)
-                : null;
-
-              const ratingVal = typeof w.overallRating === 'number' ? w.overallRating.toFixed(1) : '5.0';
-
-              return (
-                <div
-                  key={w.id}
-                  className="m3-navbar-worker-card"
-                  onClick={() => handleStartChatWithWorker(w)}
-                >
-                  <div className="m3-navbar-worker-avatar-wrap">
-                    {avatarUrl && !failedWorkerAvatars[w.id] ? (
-                      <img
-                        src={avatarUrl}
-                        alt={w.name}
-                        className="m3-navbar-worker-avatar-img"
-                        onError={() => setFailedWorkerAvatars(prev => ({ ...prev, [w.id]: true }))}
-                      />
-                    ) : (
-                      <div className="m3-navbar-worker-avatar-fallback">
-                        {getInitial(w.name)}
-                      </div>
-                    )}
-                  </div>
-
-                  <div className="m3-navbar-worker-info">
-                    <div className="m3-navbar-worker-header">
-                      <span className="m3-navbar-worker-name">{w.name}</span>
-                      {(w.isVerified || w.verified) && (
-                        <md-icon className="m3-navbar-verified-icon">verified</md-icon>
-                      )}
-                      {primarySkill && (
-                        <span className="m3-navbar-trade-tag">
-                          <md-icon>handyman</md-icon>
-                          <span>{primarySkill}</span>
-                        </span>
-                      )}
-                    </div>
-
-                    <div className="m3-navbar-worker-chips">
-                      <span className="m3-navbar-chip rating">
-                        <md-icon>star</md-icon>
-                        <span>{ratingVal}</span>
-                      </span>
-
-                      {w.primaryServiceArea && (
-                        <span className="m3-navbar-chip location">
-                          <md-icon>location_on</md-icon>
-                          <span>{w.primaryServiceArea}</span>
-                        </span>
-                      )}
-
-                      <span className={`m3-navbar-chip status ${w.isAvailable ? 'available' : 'busy'}`}>
-                        <span className="m3-navbar-status-pulse"></span>
-                        <span>{w.isAvailable ? 'Available' : 'Busy'}</span>
-                      </span>
-                    </div>
-                  </div>
-
-                  <div className="m3-navbar-worker-actions" onClick={(e) => e.stopPropagation()}>
-                    <md-outlined-button
-                      className="m3-navbar-btn-profile"
-                      onClick={() => {
-                        setIsWorkerDropdownOpen(false);
-                        navigate(`/worker-detail?id=${w.id}`);
-                      }}
-                    >
-                      <md-icon slot="icon">person</md-icon>
-                      Profile
-                    </md-outlined-button>
-
-                    <md-filled-button
-                      className="m3-navbar-btn-chat"
-                      onClick={() => handleStartChatWithWorker(w)}
-                    >
-                      <md-icon slot="icon">chat</md-icon>
-                      Chat
-                    </md-filled-button>
-                  </div>
-                </div>
-              );
-            })
-          )}
-        </div>
-
-        {matchingWorkers.length > 0 && (
-          <div className="m3-search-dropdown-footer">
-            <button
-              type="button"
-              className="m3-search-dropdown-footer-link"
-              onClick={() => {
-                setIsWorkerDropdownOpen(false);
-                navigate(`/find?q=${encodeURIComponent(workerSearchQuery)}`);
-              }}
-            >
-              <span>Explore all {matchingWorkers.length} matching workers in Directory</span>
-              <md-icon>arrow_forward</md-icon>
-            </button>
-          </div>
-        )}
-      </div>
-    );
-  };
 
   const hasContentToSend = inputText.trim().length > 0 || previewImage !== null;
 
@@ -1187,7 +981,7 @@ export default function Chats() {
                                 </span>
                               )}
                               <span className="chat-item-preview">
-                                {(() => { const msg = conv.lastMessage || conv.LastMessage || 'No messages yet'; try { const parsed = typeof msg === 'string' && msg.startsWith('{') ? JSON.parse(msg) : null; if (parsed && (parsed.type === 'WorkerContactCard' || parsed.phoneNo || parsed.PhoneNo)) return 'Shared a contact card'; } catch (e) { } return msg; })()}
+                                {(() => { const msg = conv.lastMessage || conv.LastMessage || 'No messages yet'; try { const parsed = typeof msg === 'string' && msg.startsWith('{') ? JSON.parse(msg) : null; if (parsed && (parsed.type === 'WorkerContactCard' || parsed.phoneNo || parsed.PhoneNo)) return 'Shared a contact card'; } catch { } return msg; })()}
                               </span>
                             </div>
                             {/* ONLY display unread badge for received messages that you haven't opened yet */}
@@ -1426,7 +1220,7 @@ export default function Chats() {
                                   let card = null;
                                   try {
                                     card = typeof msg.content === 'string' ? JSON.parse(msg.content) : msg.content;
-                                  } catch (e) {
+                                  } catch {
                                     card = { phoneNo: msg.content, workerName: 'Verified Worker' };
                                   }
                                   const phone = card?.phoneNo || card?.PhoneNo || '';

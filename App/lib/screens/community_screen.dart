@@ -680,27 +680,27 @@ class _CommunityScreenState extends State<CommunityScreen> with SingleTickerProv
     );
     String selectedCatId = postToEdit?.serviceCategoryId.isNotEmpty == true ? postToEdit!.serviceCategoryId : 'general';
 
-    // Parse existing location into District & DS Division
+    // Parse existing location into District & Province
     String? selectedDistrict;
-    String? selectedDsDivision;
+    String? selectedProvince;
     if (postToEdit?.location != null && postToEdit!.location.isNotEmpty) {
-      final parts = postToEdit.location.split(',').map((e) => e.trim()).toList();
-      if (parts.length >= 2) {
-        final potentialDs = parts[0];
-        final potentialDist = parts[1];
-        if (SriLankaLocations.districts.contains(potentialDist)) {
-          selectedDistrict = potentialDist;
-          if (SriLankaLocations.getDsDivisions(potentialDist).contains(potentialDs)) {
-            selectedDsDivision = potentialDs;
-          }
+      final locLower = postToEdit.location.toLowerCase();
+      for (final dist in SriLankaLocations.districts) {
+        if (locLower.contains(dist.toLowerCase())) {
+          selectedDistrict = dist;
+          break;
         }
-      } else if (parts.length == 1) {
-        if (SriLankaLocations.districts.contains(parts[0])) {
-          selectedDistrict = parts[0];
+      }
+      for (final prov in SriLankaLocations.provinces) {
+        final provBase = prov.toLowerCase().replaceAll(' province', '');
+        if (locLower.contains(provBase)) {
+          selectedProvince = prov;
+          break;
         }
       }
     }
     selectedDistrict ??= 'Colombo';
+    selectedProvince ??= SriLankaLocations.getProvinceForDistrict(selectedDistrict) ?? 'Western Province';
 
     bool isSubmitting = false;
 
@@ -710,7 +710,6 @@ class _CommunityScreenState extends State<CommunityScreen> with SingleTickerProv
       backgroundColor: Colors.transparent,
       builder: (ctx) => StatefulBuilder(
         builder: (modalCtx, setModalState) {
-          final currentDistrictDsList = SriLankaLocations.getDsDivisions(selectedDistrict);
           final hasImage = imageController.text.trim().isNotEmpty;
 
           return Padding(
@@ -817,9 +816,9 @@ class _CommunityScreenState extends State<CommunityScreen> with SingleTickerProv
                     ),
                     const SizedBox(height: 14),
 
-                    // Location - District & Divisional Secretariat Section
+                    // Location - District & Province Section
                     Text(
-                      'Location (District & DS Division)',
+                      'Location (District & Province)',
                       style: GoogleFonts.dmSans(fontWeight: FontWeight.w700, fontSize: 13),
                     ),
                     const SizedBox(height: 8),
@@ -828,7 +827,9 @@ class _CommunityScreenState extends State<CommunityScreen> with SingleTickerProv
                         // District Dropdown
                         Expanded(
                           child: DropdownButtonFormField<String>(
-                            initialValue: SriLankaLocations.districts.contains(selectedDistrict) ? selectedDistrict : SriLankaLocations.districts.first,
+                            value: SriLankaLocations.districts.contains(selectedDistrict)
+                                ? selectedDistrict
+                                : SriLankaLocations.districts.first,
                             decoration: InputDecoration(
                               labelText: 'District',
                               border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
@@ -844,31 +845,43 @@ class _CommunityScreenState extends State<CommunityScreen> with SingleTickerProv
                               if (val != null) {
                                 setModalState(() {
                                   selectedDistrict = val;
-                                  selectedDsDivision = null;
+                                  final prov = SriLankaLocations.getProvinceForDistrict(val);
+                                  if (prov != null) {
+                                    selectedProvince = prov;
+                                  }
                                 });
                               }
                             },
                           ),
                         ),
                         const SizedBox(width: 10),
-                        // DS Division Dropdown
+                        // Province Dropdown
                         Expanded(
                           child: DropdownButtonFormField<String>(
-                            initialValue: currentDistrictDsList.contains(selectedDsDivision) ? selectedDsDivision : null,
-                            hint: Text('DS Division', style: GoogleFonts.dmSans(fontSize: 13)),
+                            value: SriLankaLocations.provinces.contains(selectedProvince)
+                                ? selectedProvince
+                                : SriLankaLocations.provinces.first,
                             decoration: InputDecoration(
-                              labelText: 'DS Division',
+                              labelText: 'Province',
                               border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                               contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                             ),
-                            items: currentDistrictDsList.map((ds) {
+                            items: SriLankaLocations.provinces.map((prov) {
                               return DropdownMenuItem<String>(
-                                value: ds,
-                                child: Text(ds, overflow: TextOverflow.ellipsis),
+                                value: prov,
+                                child: Text(prov, overflow: TextOverflow.ellipsis),
                               );
                             }).toList(),
                             onChanged: (val) {
-                              setModalState(() => selectedDsDivision = val);
+                              if (val != null) {
+                                setModalState(() {
+                                  selectedProvince = val;
+                                  final distsInProv = SriLankaLocations.getDistrictsForProvince(val);
+                                  if (!distsInProv.contains(selectedDistrict)) {
+                                    selectedDistrict = distsInProv.isNotEmpty ? distsInProv.first : 'Colombo';
+                                  }
+                                });
+                              }
                             },
                           ),
                         ),
@@ -1010,9 +1023,7 @@ class _CommunityScreenState extends State<CommunityScreen> with SingleTickerProv
                             : () async {
                                 final title = titleController.text.trim();
                                 final content = contentController.text.trim();
-                                final constructedLocation = (selectedDsDivision != null && selectedDsDivision!.isNotEmpty)
-                                    ? '$selectedDsDivision, ${selectedDistrict ?? "Colombo"}'
-                                    : (selectedDistrict ?? 'Colombo');
+                                final constructedLocation = '$selectedDistrict, $selectedProvince';
                                 final imageUrl = imageController.text.trim();
 
                                 if (title.isEmpty || content.isEmpty) {

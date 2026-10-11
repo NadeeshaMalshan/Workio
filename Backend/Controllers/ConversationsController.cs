@@ -250,7 +250,7 @@ namespace Superbass.Controllers
             var allowedStatuses = new[] { "Confirmed", "InProgress", "Completed" };
             if (!allowedStatuses.Contains(booking.Status))
             {
-                return BadRequest(new { message = $"Contact can only be shared after the booking is accepted. Current status: '{booking.Status}'." });
+                return BadRequest(new { message = $"Contact can only be shared after the booking is accepted." });
             }
 
             // 3. Get the worker's verified phone number stored in the system (cannot be manually entered or modified)
