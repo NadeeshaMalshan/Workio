@@ -37,7 +37,7 @@ export default function Footer() {
         <div className="uber-footer-columns">
 
 
-          {/* Column 2: Products / Services */}
+          {/* Column 1: Products / Services */}
           <div className="uber-footer-col">
             <h4 className="uber-footer-col-title">Services</h4>
             <ul className="uber-footer-links-list">
@@ -51,20 +51,10 @@ export default function Footer() {
             </ul>
           </div>
 
-          {/* Column 3: Trust & Community */}
-          <div className="uber-footer-col">
-            <h4 className="uber-footer-col-title">Trust & Safety</h4>
-            <ul className="uber-footer-links-list">
-              <li><a href="/community" onClick={(e) => { e.preventDefault(); navigate('/community'); }}>Verified Background Checks</a></li>
-              <li><a href="/community" onClick={(e) => { e.preventDefault(); navigate('/community'); }}>Resident Protection</a></li>
-              <li><a href="/community" onClick={(e) => { e.preventDefault(); navigate('/community'); }}>Neighbor Reviews</a></li>
-              <li><a href="/community" onClick={(e) => { e.preventDefault(); navigate('/community'); }}>Fair Trade Guarantee</a></li>
-              <li><a href="/community" onClick={(e) => { e.preventDefault(); navigate('/community'); }}>Community Guidelines</a></li>
-              <li><a href="/community" onClick={(e) => { e.preventDefault(); navigate('/community'); }}>Sustainability & Local Baas</a></li>
-            </ul>
-          </div>
 
-          {/* Column 4: Coverage / Locations */}
+
+
+          {/* Column 2: Coverage / Locations */}
           <div className="uber-footer-col">
             <h4 className="uber-footer-col-title">Locations</h4>
             <ul className="uber-footer-links-list">
