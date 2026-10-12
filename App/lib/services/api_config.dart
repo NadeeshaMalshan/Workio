@@ -15,12 +15,19 @@ class ApiConfig {
   /// Retrieves backend base URL dynamically:
   /// 1. Programmatic override (customBaseUrl)
   /// 2. Value from .env file via flutter_dotenv
+  static String? _getEnv(String key) {
+    if (dotenv.isInitialized) {
+      return dotenv.env[key];
+    }
+    return null;
+  }
+
   /// 3. Fallback to compile-time environment variable (--dart-define)
   static String get baseUrl {
     if (customBaseUrl != null && customBaseUrl!.trim().isNotEmpty) {
       return _resolveHost(customBaseUrl!.trim());
     }
-    final envUrl = dotenv.env['BACKEND_URL'];
+    final envUrl = _getEnv('BACKEND_URL');
     if (envUrl != null && envUrl.trim().isNotEmpty) {
       return _resolveHost(envUrl.trim());
     }
@@ -37,7 +44,7 @@ class ApiConfig {
 
   /// Google OAuth Client ID loaded dynamically from .env or compile-time define
   static String get googleClientId {
-    final envClientId = dotenv.env['GOOGLE_CLIENT_ID'];
+    final envClientId = _getEnv('GOOGLE_CLIENT_ID');
     if (envClientId != null && envClientId.trim().isNotEmpty) {
       return envClientId.trim();
     }
@@ -46,7 +53,7 @@ class ApiConfig {
 
   /// OneSignal App ID loaded from .env or compile-time define
   static String get onesignalAppId {
-    final envId = dotenv.env['ONESIGNAL_APP_ID'];
+    final envId = _getEnv('ONESIGNAL_APP_ID');
     if (envId != null && envId.trim().isNotEmpty) {
       return envId.trim();
     }
@@ -59,7 +66,7 @@ class ApiConfig {
 
   /// LangGraph AI Agent Backend URL
   static String get agentBackendUrl {
-    final envUrl = dotenv.env['AGENT_BACKEND_URL'];
+    final envUrl = _getEnv('AGENT_BACKEND_URL');
     if (envUrl != null && envUrl.trim().isNotEmpty) {
       return _resolveHost(envUrl.trim());
     }

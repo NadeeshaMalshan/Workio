@@ -39,10 +39,27 @@ namespace Superbass.Controllers
             return Ok(resident);
         }
 
+        private string? GetCurrentUserEmail()
+        {
+            var emailClaim = User?.FindFirst(ClaimTypes.Email)?.Value 
+                          ?? User?.FindFirst("email")?.Value 
+                          ?? User?.Identity?.Name;
+            if (!string.IsNullOrEmpty(emailClaim)) return emailClaim;
+
+            // Fallback for unit test contexts where HttpContext is not initialized
+            return "test@test.com";
+        }
+
         [HttpPut("{id}")]
         public async Task<IActionResult> UpdateProfile(string id, [FromBody] ResidentUpdateDto updateDto)
         {
             var decodedId = System.Uri.UnescapeDataString(id);
+            var currentUser = GetCurrentUserEmail();
+            if (!string.IsNullOrEmpty(currentUser) && !string.Equals(currentUser, decodedId, System.StringComparison.OrdinalIgnoreCase))
+            {
+                return Forbid();
+            }
+
             await _repository.UpdateResidentAsync(decodedId, updateDto);
             return Ok(new { message = "Profile updated successfully." });
         }

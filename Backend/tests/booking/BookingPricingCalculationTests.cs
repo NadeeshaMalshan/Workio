@@ -7,15 +7,15 @@ namespace Superbass.Tests.BookingTests
     public class BookingPricingCalculationTests
     {
         [Theory]
-        [InlineData("Hourly", 2500.0, 3, 7500.0)]
-        [InlineData("Hourly", 3000.0, 2, 6000.0)]
+        [InlineData("Hourly", 2500, 3, 7500)]
+        [InlineData("Hourly", 3000, 2, 6000)]
         public void CalculateEstimatedPrice_ComputesCorrectHourlyTotal(
             string model,
-            double rate,
+            int rate,
             int hours,
-            double expectedTotal)
+            decimal expectedTotal)
         {
-            var calculated = rate * hours;
+            var calculated = (decimal)(rate * hours);
             var booking = new Booking
             {
                 PricingModel = model,
@@ -31,13 +31,13 @@ namespace Superbass.Tests.BookingTests
         {
             var booking = new Booking
             {
-                EstimatedPrice = 5000.0,
-                AgreedPrice = 4200.0
+                EstimatedPrice = 5000m,
+                AgreedPrice = 4200m
             };
 
             var finalPrice = booking.AgreedPrice ?? booking.EstimatedPrice;
 
-            Assert.Equal(4200.0, finalPrice);
+            Assert.Equal(4200m, finalPrice);
         }
     }
 }

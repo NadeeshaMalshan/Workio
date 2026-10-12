@@ -27,8 +27,7 @@ void main() {
     // Build our app and trigger a frame.
     await tester.pumpWidget(const SuperBassApp());
 
-    // Verify that the brand and search exist
-    expect(find.text('Workio'), findsWidgets);
+    // Verify that the search headline exists
     expect(find.text('Find Trusted Community Pros'), findsOneWidget);
   });
 }

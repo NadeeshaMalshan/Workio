@@ -38,18 +38,18 @@ namespace Superbass.Tests.BookingTests
         }
 
         [Fact]
-        public void UpdateBookingDto_AllowsStatusAndAgreedPriceUpdates()
+        public void BookingResponseDto_AllowsStatusAndAgreedPriceUpdates()
         {
-            var updateDto = new UpdateBookingDto
+            var responseDto = new BookingResponseDto
             {
                 Status = "Accepted",
-                AgreedPrice = 4500.0,
+                AgreedPrice = 4500m,
                 IsContactShared = true
             };
 
-            Assert.Equal("Accepted", updateDto.Status);
-            Assert.Equal(4500.0, updateDto.AgreedPrice);
-            Assert.True(updateDto.IsContactShared);
+            Assert.Equal("Accepted", responseDto.Status);
+            Assert.Equal(4500m, responseDto.AgreedPrice);
+            Assert.True(responseDto.IsContactShared);
         }
     }
 }

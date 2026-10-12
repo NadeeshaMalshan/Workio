@@ -14,10 +14,11 @@ namespace Superbass.Tests.ResidentTests
         [Fact]
         public async Task ReviewBooking_Valid_ReturnsOk()
         {
-            var options = new DbContextOptionsBuilder<SuperbassDbContext>().UseInMemoryDatabase("DB_Review").Options;
+            var options = new DbContextOptionsBuilder<SuperbassDbContext>().UseInMemoryDatabase(System.Guid.NewGuid().ToString()).Options;
             using var context = new SuperbassDbContext(options);
-            context.Workers.Add(new Worker { Id = 1, Name = "Worker" });
-            context.Bookings.Add(new Booking { Id = 1, WorkerId = 1, Status = "Completed" });
+            context.Residents.Add(new Resident { Email = "resident1@test.com", Name = "Resident", PhoneNo = "12345" });
+            context.Workers.Add(new Worker { Id = 1, Name = "Worker", Email = "worker1@test.com" });
+            context.Bookings.Add(new Booking { Id = 1, WorkerId = 1, ResidentEmail = "resident1@test.com", JobTitle = "Plumbing", Status = "Completed" });
             await context.SaveChangesAsync();
             var controller = new BookingsController(context, null, null, null);
             var result = await controller.ReviewBooking(1, new ReviewBookingRequest { QualityRating = 5, PunctualityRating = 5, CommunicationRating = 5 });

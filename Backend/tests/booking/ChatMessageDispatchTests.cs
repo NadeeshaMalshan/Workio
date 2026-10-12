@@ -29,9 +29,9 @@ namespace Superbass.Tests.BookingTests
         }
 
         [Fact]
-        public void SendMessageDto_CarriesContentAndReceiver()
+        public void SendMessageRequest_CarriesContentAndReceiver()
         {
-            var dto = new SendMessageDto
+            var dto = new SendMessageRequest
             {
                 ReceiverEmail = "worker@workio.lk",
                 Content = "Yes, I will bring it."

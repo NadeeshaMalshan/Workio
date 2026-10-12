@@ -39,7 +39,7 @@ namespace Superbass.Tests.BookingTests
         [InlineData("Low", true)]
         public void CreateBooking_SupportsValidUrgencyLevels(string urgency, bool isValid)
         {
-            var dto = new CreateBookingDto
+            var dto = new CreateBookingRequest
             {
                 WorkerId = 5,
                 JobTitle = "Electrical Inspection",

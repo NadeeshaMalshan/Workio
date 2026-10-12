@@ -31,8 +31,7 @@ namespace Superbass.Tests.BookingTests
                 b.WorkerId == requestedWorkerId &&
                 b.Status != "Cancelled" &&
                 b.Status != "Rejected" &&
-                b.ScheduledDate.HasValue &&
-                Math.Abs((b.ScheduledDate.Value - requestedDate).TotalHours) < 2.0);
+                Math.Abs((b.ScheduledDate - requestedDate).TotalHours) < 2.0);
 
             Assert.True(hasConflict);
         }
@@ -58,8 +57,7 @@ namespace Superbass.Tests.BookingTests
             bool hasConflict = existingBookings.Any(b =>
                 b.WorkerId == differentWorkerId &&
                 b.Status != "Cancelled" &&
-                b.ScheduledDate.HasValue &&
-                b.ScheduledDate.Value == requestedDate);
+                b.ScheduledDate == requestedDate);
 
             Assert.False(hasConflict);
         }

@@ -1631,7 +1631,7 @@ def _deterministic_card_builder(state: AgentState, ai_message: Optional[Any] = N
     )
 
     if is_booking_flow and (extracted_worker_id or extracted_worker_name):
-        worker_id_val = extracted_worker_id or "44"
+        worker_id_val = extracted_worker_id 
         worker_name_val = extracted_worker_name or f"Technician #{worker_id_val}"
         hourly_rate_val = 2800.0
         worker_cat_val = metadata.get("inferred_category") or "General Service"

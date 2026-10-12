@@ -13,36 +13,34 @@ namespace Superbass.Tests.BookingTests
             {
                 Id = 12,
                 ResidentEmail = "resident@workio.lk",
-                WorkerEmail = "worker@workio.lk",
                 WorkerId = 5,
                 CreatedAt = DateTime.UtcNow,
                 UpdatedAt = DateTime.UtcNow
             };
 
             Assert.Equal("resident@workio.lk", conversation.ResidentEmail);
-            Assert.Equal("worker@workio.lk", conversation.WorkerEmail);
             Assert.Equal(5, conversation.WorkerId);
             Assert.True(conversation.CreatedAt <= DateTime.UtcNow);
         }
 
         [Fact]
-        public void ConversationDto_ExposesUnreadCountAndOtherUser()
+        public void ConversationSummaryDto_ExposesUnreadCountAndParticipants()
         {
-            var dto = new ConversationDto
+            var dto = new ConversationSummaryDto
             {
                 Id = 12,
-                OtherUserEmail = "worker@workio.lk",
-                OtherUserName = "Sunil Electrician",
+                ResidentEmail = "resident@workio.lk",
+                WorkerEmail = "worker@workio.lk",
+                WorkerName = "Sunil Electrician",
                 LastMessage = "I am on the way.",
                 LastMessageAt = DateTime.UtcNow,
-                UnreadCount = 3,
-                IsWorker = false
+                UnreadCount = 3
             };
 
             Assert.Equal(3, dto.UnreadCount);
-            Assert.Equal("worker@workio.lk", dto.OtherUserEmail);
-            Assert.Equal("Sunil Electrician", dto.OtherUserName);
-            Assert.False(dto.IsWorker);
+            Assert.Equal("resident@workio.lk", dto.ResidentEmail);
+            Assert.Equal("worker@workio.lk", dto.WorkerEmail);
+            Assert.Equal("Sunil Electrician", dto.WorkerName);
         }
     }
 }

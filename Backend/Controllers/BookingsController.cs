@@ -594,6 +594,11 @@ namespace Superbass.Controllers
 
             if (booking == null) return NotFound(new { message = "Booking not found." });
 
+            if (booking.Status == "Reviewed" || booking.ReviewRating.HasValue)
+            {
+                return BadRequest(new { message = "Booking has already been reviewed." });
+            }
+
             var q = Math.Clamp(request.QualityRating, 1, 5);
             var p = Math.Clamp(request.PunctualityRating, 1, 5);
             var c = Math.Clamp(request.CommunicationRating, 1, 5);

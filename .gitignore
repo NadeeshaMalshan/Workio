@@ -145,3 +145,6 @@ App/windows/flutter/generated_plugin_registrant.cc
 App/windows/flutter/generated_plugin_registrant.h
 App/windows/flutter/generated_plugins.cmake
 Frontend/package-lock.json
+/App/test
+
+/Backend/tests
